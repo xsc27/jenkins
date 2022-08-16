@@ -45,11 +45,17 @@ def analyze_file(file, lineno, commits_and_tags, dry_run=False):
         .split(" ", 1)[0]
     )
     print(f"\tfirst sha: {line_sha}")
-    first_tag = subprocess.check_output(
-        [GIT, "tag", "--sort=creatordate", "--contains", line_sha, "jenkins-*"],
+    if first_tag := subprocess.check_output(
+        [
+            GIT,
+            "tag",
+            "--sort=creatordate",
+            "--contains",
+            line_sha,
+            "jenkins-*",
+        ],
         text=True,
-    ).split("\n", 1)[0]
-    if first_tag:
+    ).split("\n", 1)[0]:
         print(f"\tfirst tag was {first_tag}")
         commits_and_tags[line_sha] = first_tag
         if not dry_run:
@@ -88,8 +94,7 @@ def analyze_files(commits_and_tags, dry_run=False):
         for line in io.TextIOWrapper(proc.stdout):
             parts = line.rstrip().split(":", 2)
             analyze_file(parts[0], parts[1], commits_and_tags, dry_run=dry_run)
-        retcode = proc.wait()
-        if retcode:
+        if retcode := proc.wait():
             raise subprocess.CalledProcessError(retcode, cmd)
     print()
 
@@ -101,7 +106,7 @@ def display_results(commits_and_tags):
     :param commits_and_tags: The output dictionary mapping commits to release tags.
     """
     print("List of commits introducing new API and the first release they went in:")
-    releases = {release for release in commits_and_tags.values()}
+    releases = set(commits_and_tags.values())
     for release in sorted(releases):
         print(f"* https://github.com/jenkinsci/jenkins/releases/tag/{release}")
         for commit, first_release in commits_and_tags.items():
